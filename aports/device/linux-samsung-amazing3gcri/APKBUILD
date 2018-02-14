@@ -1,0 +1,82 @@
+# Kernel config based on: arch/arm/configs/(CHANGEME!)
+
+pkgname="linux-samsung-amazing3gcri"
+pkgver=3.0.8
+pkgrel=0
+pkgdesc="Samsung Galaxy Discover kernel fork"
+arch="armhf"
+_carch="arm"
+_flavor="samsung-amazing3gcri"
+url="https://kernel.org"
+license="GPL2"
+options="!strip !check !tracedeps"
+makedepends="perl sed installkernel bash gmp-dev bc linux-headers elfutils-dev"
+HOSTCC="${CC:-gcc}"
+HOSTCC="${HOSTCC#${CROSS_COMPILE}}"
+
+# Source
+_repository="Android_Kernel_samsung_amazing3gcri"
+_commit="8c4d8d3634f7fe3fb1c070e68c576bf759e7cc4e"
+_config="config-${_flavor}.${arch}"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/CowboyEnvy/${_repository}/archive/${_commit}.tar.gz
+	$_config
+	compiler-gcc6.h
+"
+builddir="$srcdir/${_repository}-${_commit}"
+
+prepare() {
+	default_prepare
+
+	# gcc6 support
+	cp -v "$srcdir/compiler-gcc6.h" "$builddir/include/linux/"
+
+	# Remove -Werror from all makefiles
+	local i
+	local makefiles="$(find . -type f -name Makefile)
+		$(find . -type f -name Kbuild)"
+	for i in $makefiles; do
+		sed -i 's/-Werror-/-W/g' "$i"
+		sed -i 's/-Werror//g' "$i"
+	done
+
+	# Prepare kernel config ('yes ""' for kernels lacking olddefconfig)
+	cp "$srcdir"/$_config "$builddir"/.config
+	yes "" | make ARCH="$_carch" HOSTCC="$HOSTCC" oldconfig
+}
+
+menuconfig() {
+	cd "$builddir"
+	make ARCH="$_carch" menuconfig
+	cp .config "$startdir"/$_config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+}
+
+package() {
+	# kernel.release
+	install -D "$builddir/include/config/kernel.release" \
+		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+
+	# zImage (find the right one)
+	cd "$builddir/arch/$_carch/boot"
+	_target="$pkgdir/boot/vmlinuz-$_flavor"
+	for _zimg in zImage-dtb Image.gz-dtb *zImage Image; do
+		[ -e "$_zimg" ] || continue
+		msg "zImage found: $_zimg"
+		install -Dm644 "$_zimg" "$_target"
+		break
+	done
+	if ! [ -e "$_target" ]; then
+		error "Could not find zImage in $PWD!"
+		return 1
+	fi
+}
+
+sha512sums="1a85001b215320d6e2d013c21be244a455e5d01eb78bc20f3dcb65118704601ee02edcf2fc84b99a203fcc199693181caa3bd6dbe547544c5997486d839f10c4  linux-samsung-amazing3gcri-8c4d8d3634f7fe3fb1c070e68c576bf759e7cc4e.tar.gz
+de4e1874fd155d392d752fa8051c1fbe12f1965afebd1a20b920ab510abe956dc2f0cb1064c7e5f571e688fb5e5d05e8f67206c0e31e552e905256617f4a4001  config-samsung-amazing3gcri.armhf
+d80980e9474c82ba0ef1a6903b434d8bd1b092c40367ba543e72d2c119301c8b2d05265740e4104ca1ac5d15f6c4aa49e8776cb44264a9a28dc551e0d1850dcc  compiler-gcc6.h"
