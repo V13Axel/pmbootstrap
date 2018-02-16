@@ -35,16 +35,16 @@ _pmbootstrap ()
         '1: :->command'\
         '2: :->target'
     
-    if [ -f $PWD/pmbootstrap.py ]; then #We must be in the pmbootstrap dir
         case $state in
             command)
                 compadd `_pmbootstrap_commands`
                 ;;
             target)
-                compadd `_pmbootstrap_targets $line[1]`
+                if [ -f $PWD/pmbootstrap.py ]; then #We must be in the pmbootstrap dir
+                    compadd `_pmbootstrap_targets $line[1]`
+                fi
                 ;;
         esac
-    fi
 }
 
 compdef _pmbootstrap pmbootstrap
