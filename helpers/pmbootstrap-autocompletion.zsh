@@ -18,7 +18,7 @@ _pmbootstrap_targets()
 {
     case $1 in
         menuconfig|checksum|aportgen|build|kconfig_check)
-            \ls -l $PWD/aports/device/
+            \ls -1 $PWD/aports/device/
             ;;
         flasher)
             \echo flash_kernel flash_system
