@@ -50,14 +50,14 @@ _pmbootstrap()
 		'1: :->command'\
 		'2: :->target'
 
-		case $state in
-			command)
-				compadd `_pmbootstrap_commands`
-				;;
-			target)
-				compadd `_pmbootstrap_targets $line[1]`
-				;;
-		esac
+	case $state in
+		command)
+			compadd `_pmbootstrap_commands`
+			;;
+		target)
+			compadd `_pmbootstrap_targets $line[1]`
+			;;
+	esac
 }
 
 if [ -f $PMBOOTSTRAP_DIR/pmbootstrap.py ]; then
